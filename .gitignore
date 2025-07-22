@@ -1,0 +1,120 @@
+## .gitignore for modern .NET development
+## Based on: https://github.com/github/gitignore/blob/main/Dotnet.gitignore
+
+########################################
+## Build and Output Artifacts
+########################################
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+artifacts/
+bld/
+[Dd]ebug*/
+[Rr]elease*/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+[Ww][Ii][Nn]32/
+
+########################################
+## Visual Studio Temporary Files
+########################################
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.sdf
+*.cache
+*.pdb
+
+########################################
+## Rider IDE
+########################################
+.idea/
+*.sln.iml
+
+########################################
+## ASP.NET Files
+########################################
+ScaffoldingReadMe.txt
+wwwroot/
+
+########################################
+## .NET Core / SDK-specific
+########################################
+project.lock.json
+project.fragment.lock.json
+global.json
+*.deps.json
+*.runtimeconfig.json
+*.runtimeconfig.dev.json
+
+########################################
+## NuGet
+########################################
+*.nupkg
+*.snupkg
+packages/
+*.nuget.props
+*.nuget.targets
+.nuget/
+
+########################################
+## Testing / Code Coverage
+########################################
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.coverage
+*.coveragexml
+*.codecoverage
+*.VisualState.xml
+TestResult.xml
+nunit-*.xml
+
+########################################
+## Logs and Diagnostics
+########################################
+*.log
+*.binlog
+CrashDumps/
+*.dmp
+
+########################################
+## Temporary/Backup Files
+########################################
+~$*
+*~
+*.tmp
+*.temp
+*.bak
+
+########################################
+## Resharper
+########################################
+_ReSharper*/
+*.DotSettings.user
+
+########################################
+## StyleCop
+########################################
+StyleCopReport.xml
+
+########################################
+## dotCover
+########################################
+.idea/.idea.DotSettings
+
+########################################
+## Local config
+########################################
+appsettings.*.json
+secrets.json
+
+# Optional: Uncomment if you want to ignore environment-specific configs
+# appsettings.Development.json
+# appsettings.Production.json
+
