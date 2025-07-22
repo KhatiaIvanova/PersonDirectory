@@ -1,4 +1,5 @@
-﻿using System;
+﻿using PersonDirectory.Domain.Enums;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,7 +9,7 @@ namespace PersonDirectory.Application.DTOs
 {
     public class PhoneNumberDto
     {
-        public string Type { get; set; } = default!;
+        public PhoneType Type { get; set; } = PhoneType.მობილური!;
         public string Number { get; set; } = default!;
     }
 }

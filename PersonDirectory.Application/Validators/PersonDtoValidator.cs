@@ -1,5 +1,6 @@
 ﻿using FluentValidation;
 using PersonDirectory.Application.DTOs;
+using PersonDirectory.Domain.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -25,7 +26,7 @@ public static class PersonValidatorHelper
             .WithMessage("გვარი უნდა შეიცავდეს მხოლოდ ქართულ ან ლათინურ ასოებს, ერთდროულად არა.");
 
         validator.RuleFor(x => x.Gender)
-            .Must(g => g == "კაცი" || g == "ქალი");
+            .Must(g => g == Gender.ქალი || g == Gender.კაცი);
 
         validator.RuleFor(x => x.PersonalNumber)
             .NotEmpty()

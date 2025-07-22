@@ -1,5 +1,6 @@
 ﻿using FluentValidation;
 using PersonDirectory.Application.DTOs;
+using PersonDirectory.Domain.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,7 +14,7 @@ namespace PersonDirectory.Application.Validators
         public PhoneNumberDtoValidator()
         {
             RuleFor(x => x.Type)
-                .Must(t => new[] { "მობილური", "ოფისის", "სახლის" }.Contains(t));
+                .Must(t => new[] { PhoneType.მობილური, PhoneType.სახლი, PhoneType.ოფისი }.Contains(t));
 
             RuleFor(x => x.Number)
                 .NotEmpty()

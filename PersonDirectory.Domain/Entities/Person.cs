@@ -1,4 +1,5 @@
-﻿using System;
+﻿using PersonDirectory.Domain.Enums;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,7 +12,7 @@ namespace PersonDirectory.Domain.Entities
         public int Id { get; set; }
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
-        public string Gender { get; set; } = string.Empty;
+        public Gender Gender { get; set; } = Gender.ქალი;
         public string PersonalNumber { get; set; } = string.Empty;
         public DateTime DateOfBirth { get; set; }
         public List<PhoneNumber> PhoneNumbers { get; set; } = new();

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using PersonDirectory.Domain.Enums;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,6 +10,6 @@ namespace PersonDirectory.Application.DTOs
     public class RelatedPersonDto
     {
         public int RelatedPersonId { get; set; }
-        public string RelationType { get; set; } = default!;
+        public RelationType RelationType { get; set; } = RelationType.ნათესავი!;
     }
 }
