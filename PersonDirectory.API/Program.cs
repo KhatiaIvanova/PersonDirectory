@@ -5,7 +5,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
-using PersonDirectory.API.Configurations;
 using PersonDirectory.API.Middlewares;
 using PersonDirectory.Application.DTOs;
 using PersonDirectory.Application.Interfaces;
@@ -16,10 +15,7 @@ using PersonDirectory.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Load configuration from appsettings.json
 builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
-
-// Add services
 builder.Services.AddControllers();
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<PersonCreateDtoValidator>();
@@ -34,27 +30,22 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// Register app-specific services
-builder.Services.AddSingleton<AppDbContext>(); // replace with AddScoped if needed
+builder.Services.AddSingleton<AppDbContext>();
 builder.Services.AddScoped<IPersonRepository, PersonRepository>();
 builder.Services.AddScoped<IPersonService, PersonService>();
 
 var app = builder.Build();
 
-// Enable Swagger in all environments (you can restrict to Development if you prefer)
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "Person Directory API v1");
-    c.RoutePrefix = "swagger"; // so UI is at /swagger
+    c.RoutePrefix = "swagger";
 });
 
-// Exception handling middleware
 app.UseGlobalExceptionHandler();
-// Enable HTTPS
 app.UseHttpsRedirection();
 app.UseHttpsRedirection();
-// Routing & Controllers
 app.UseAuthorization();
 app.MapControllers();
 
