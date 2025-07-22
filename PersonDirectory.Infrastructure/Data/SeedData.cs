@@ -1,11 +1,17 @@
 ﻿using Dapper;
+using Polly;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace PersonDirectory.Infrastructure.Data;
 public class SeedData
 {
     public static async Task InitializeAsync(AppDbContext context)
     {
-        using var connection = context.CreateConnection();
+        using var connection = await context.CreateConnectionAsync();
         var people = await connection.QueryAsync<int>("SELECT TOP 1 1 FROM Persons");
         if (!people.Any())
         {

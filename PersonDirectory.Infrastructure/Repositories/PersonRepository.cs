@@ -3,8 +3,13 @@ using PersonDirectory.Application.Interfaces;
 using PersonDirectory.Domain.Entities;
 using PersonDirectory.Domain.Enums;
 using PersonDirectory.Infrastructure.Data;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Threading.Tasks;
 
 namespace PersonDirectory.Infrastructure.Repositories;
+
 public class PersonRepository : IPersonRepository
 {
     private readonly AppDbContext _context;
@@ -16,58 +21,78 @@ public class PersonRepository : IPersonRepository
 
     public async Task<int> AddPersonAsync(Person person)
     {
-        string GenderEnumValue = person.Gender.ToString();
-        using var connection = _context.CreateConnection();
         var sql = @"
             INSERT INTO Persons (FirstName, LastName, Gender, PersonalNumber, DateOfBirth)
-            VALUES (@FirstName, @LastName, @GenderEnumValue, @PersonalNumber, @DateOfBirth);
+            VALUES (@FirstName, @LastName, @Gender, @PersonalNumber, @DateOfBirth);
             SELECT CAST(SCOPE_IDENTITY() as int);
         ";
-        return await connection.QuerySingleAsync<int>(sql, new { person, GenderEnumValue });
+
+        using var connection = await _context.CreateConnectionAsync();
+
+        // პარამეტრებში პირდაპირ enum-ს ასობით ჩავასვათ, DB-ში უნდა იყოს nvarchar/varchar ტიპი
+        return await connection.QuerySingleAsync<int>(sql, new
+        {
+            person.FirstName,
+            person.LastName,
+            Gender = person.Gender.ToString(),
+            person.PersonalNumber,
+            person.DateOfBirth
+        });
     }
 
     public async Task UpdatePersonAsync(Person person)
     {
-        string GenderEnumValue = person.Gender.ToString();
-        using var connection = _context.CreateConnection();
-        await connection.ExecuteAsync(@"
-            UPDATE Persons
-            SET FirstName = @FirstName,
+        var sql = @"
+            UPDATE Persons SET
+                FirstName = @FirstName,
                 LastName = @LastName,
-                Gender = @GenderEnumValue,
+                Gender = @Gender,
                 PersonalNumber = @PersonalNumber,
                 DateOfBirth = @DateOfBirth
-            WHERE Id = @Id
-        ", new { person, GenderEnumValue });
+            WHERE Id = @Id;
+        ";
+
+        using var connection = await _context.CreateConnectionAsync();
+
+        await connection.ExecuteAsync(sql, new
+        {
+            person.FirstName,
+            person.LastName,
+            Gender = person.Gender.ToString(),
+            person.PersonalNumber,
+            person.DateOfBirth,
+            person.Id
+        });
     }
 
     public async Task DeletePersonAsync(int personId)
     {
-        using var connection = _context.CreateConnection();
-        await connection.ExecuteAsync("DELETE FROM Persons WHERE Id = @Id", new { Id = personId });
+        const string sql = "DELETE FROM Persons WHERE Id = @Id";
+
+        using var connection = await _context.CreateConnectionAsync();
+
+        await connection.ExecuteAsync(sql, new { Id = personId });
     }
 
     public async Task<Person?> GetPersonByIdAsync(int personId)
     {
-        using var connection = _context.CreateConnection();
-        var result = await connection.QuerySingleOrDefaultAsync<Person>("SELECT * FROM Persons WHERE Id = @Id", new { Id = personId });
-        if (result == null)
+        const string sql = "SELECT * FROM Persons WHERE Id = @Id";
+
+        using var connection = await _context.CreateConnectionAsync();
+
+        var person = await connection.QuerySingleOrDefaultAsync<Person>(sql, new { Id = personId });
+
+        if (person == null)
             return null;
 
-        return new Person
-        {
-            Id = result.Id,
-            FirstName = result.FirstName,
-            LastName = result.LastName,
-            Gender = Enum.Parse<Gender>(result.Gender.ToString()),
-            PersonalNumber = result.PersonalNumber,
-            DateOfBirth = result.DateOfBirth
-        };
+        // თუ გინდა Gender string-იდან enum-ში გადაყვანა (მაგ: Dapper-ით პირდაპირ არ გადადის)
+        person.Gender = Enum.Parse<Gender>(person.Gender.ToString());
+
+        return person;
     }
 
     public async Task<IEnumerable<Person>> SearchPersonsAsync(string? name, string? lastName, string? personalNumber, int page, int pageSize)
     {
-        using var connection = _context.CreateConnection();
         var sql = @"
             SELECT * FROM Persons
             WHERE (@Name IS NULL OR FirstName LIKE '%' + @Name + '%')
@@ -76,6 +101,8 @@ public class PersonRepository : IPersonRepository
             ORDER BY Id
             OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;
         ";
+
+        using var connection = await _context.CreateConnectionAsync();
 
         return await connection.QueryAsync<Person>(sql, new
         {
@@ -89,26 +116,38 @@ public class PersonRepository : IPersonRepository
 
     public async Task AddRelatedPersonAsync(RelatedPerson relation)
     {
-        string relationEnum = relation.RelationType.ToString();
-        using var connection = _context.CreateConnection();
-        await connection.ExecuteAsync(@"
+        const string sql = @"
             INSERT INTO RelatedPersons (PersonId, RelatedPersonId, RelationType)
-            VALUES (@PersonId, @RelatedPersonId, @relationEnum)
-        ", new { relation, relationEnum });
+            VALUES (@PersonId, @RelatedPersonId, @RelationType);
+        ";
+
+        using var connection = await _context.CreateConnectionAsync();
+
+        await connection.ExecuteAsync(sql, new
+        {
+            relation.PersonId,
+            relation.RelatedToPersonId,
+            RelationType = relation.RelationType.ToString()
+        });
     }
 
     public async Task DeleteRelatedPersonAsync(int relationId)
     {
-        using var connection = _context.CreateConnection();
-        await connection.ExecuteAsync("DELETE FROM RelatedPersons WHERE Id = @Id", new { Id = relationId });
+        const string sql = "DELETE FROM RelatedPersons WHERE Id = @Id";
+
+        using var connection = await _context.CreateConnectionAsync();
+
+        await connection.ExecuteAsync(sql, new { Id = relationId });
     }
 
     public async Task<bool> ExistsByPersonalNumberAsync(string personalNumber)
     {
-        using var connection = _context.CreateConnection();
-        var exists = await connection.QuerySingleOrDefaultAsync<int>(
-            "SELECT 1 FROM Persons WHERE PersonalNumber = @PersonalNumber",
-            new { PersonalNumber = personalNumber });
+        const string sql = "SELECT CASE WHEN EXISTS (SELECT 1 FROM Persons WHERE PersonalNumber = @PersonalNumber) THEN 1 ELSE 0 END";
+
+        using var connection = await _context.CreateConnectionAsync();
+
+        var exists = await connection.QuerySingleAsync<int>(sql, new { PersonalNumber = personalNumber });
+
         return exists == 1;
     }
 }
