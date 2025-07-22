@@ -2,6 +2,7 @@
 using PersonDirectory.Application.DTOs;
 using PersonDirectory.Application.Interfaces;
 using PersonDirectory.Domain.Entities;
+using PersonDirectory.Domain.Enums;
 using PersonDirectory.Infrastructure.Data;
 using System;
 using System.Collections.Generic;
@@ -21,27 +22,29 @@ public class PersonRepository : IPersonRepository
 
     public async Task<int> AddPersonAsync(Person person)
     {
+        string GenderEnumValue =person.Gender.ToString();
         using var connection = _context.CreateConnection();
         var sql = @"
             INSERT INTO Persons (FirstName, LastName, Gender, PersonalNumber, DateOfBirth)
-            VALUES (@FirstName, @LastName, @Gender, @PersonalNumber, @DateOfBirth);
+            VALUES (@FirstName, @LastName, @GenderEnumValue, @PersonalNumber, @DateOfBirth);
             SELECT CAST(SCOPE_IDENTITY() as int);
         ";
-        return await connection.QuerySingleAsync<int>(sql, person);
+        return await connection.QuerySingleAsync<int>(sql, new { person, GenderEnumValue });
     }
 
     public async Task UpdatePersonAsync(Person person)
     {
+        string GenderEnumValue = person.Gender.ToString();
         using var connection = _context.CreateConnection();
         await connection.ExecuteAsync(@"
             UPDATE Persons
             SET FirstName = @FirstName,
                 LastName = @LastName,
-                Gender = @Gender,
+                Gender = @GenderEnumValue,
                 PersonalNumber = @PersonalNumber,
                 DateOfBirth = @DateOfBirth
             WHERE Id = @Id
-        ", person);
+        ", new { person, GenderEnumValue });
     }
 
     public async Task DeletePersonAsync(int personId)
@@ -53,7 +56,19 @@ public class PersonRepository : IPersonRepository
     public async Task<Person?> GetPersonByIdAsync(int personId)
     {
         using var connection = _context.CreateConnection();
-        return await connection.QuerySingleOrDefaultAsync<Person>("SELECT * FROM Persons WHERE Id = @Id", new { Id = personId });
+        var result =  await connection.QuerySingleOrDefaultAsync<Person>("SELECT * FROM Persons WHERE Id = @Id", new { Id = personId });
+        if (result == null)
+            return null;
+
+        return new Person
+        {
+            Id = result.Id,
+            FirstName = result.FirstName,
+            LastName = result.LastName,
+            Gender = Enum.Parse<Gender>(result.Gender.ToString()), 
+            PersonalNumber = result.PersonalNumber,
+            DateOfBirth = result.DateOfBirth
+        };
     }
 
     public async Task<IEnumerable<Person>> SearchPersonsAsync(string? name, string? lastName, string? personalNumber, int page, int pageSize)
@@ -80,11 +95,12 @@ public class PersonRepository : IPersonRepository
 
     public async Task AddRelatedPersonAsync(RelatedPerson relation)
     {
+        string relationEnum =relation.RelationType.ToString();
         using var connection = _context.CreateConnection();
         await connection.ExecuteAsync(@"
             INSERT INTO RelatedPersons (PersonId, RelatedPersonId, RelationType)
-            VALUES (@PersonId, @RelatedPersonId, @RelationType)
-        ", relation);
+            VALUES (@PersonId, @RelatedPersonId, @relationEnum)
+        ", new { relation, relationEnum });
     }
 
     public async Task DeleteRelatedPersonAsync(int relationId)
