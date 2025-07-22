@@ -1,14 +1,8 @@
 ﻿using Dapper;
-using PersonDirectory.Application.DTOs;
 using PersonDirectory.Application.Interfaces;
 using PersonDirectory.Domain.Entities;
 using PersonDirectory.Domain.Enums;
 using PersonDirectory.Infrastructure.Data;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PersonDirectory.Infrastructure.Repositories;
 public class PersonRepository : IPersonRepository
@@ -22,7 +16,7 @@ public class PersonRepository : IPersonRepository
 
     public async Task<int> AddPersonAsync(Person person)
     {
-        string GenderEnumValue =person.Gender.ToString();
+        string GenderEnumValue = person.Gender.ToString();
         using var connection = _context.CreateConnection();
         var sql = @"
             INSERT INTO Persons (FirstName, LastName, Gender, PersonalNumber, DateOfBirth)
@@ -56,7 +50,7 @@ public class PersonRepository : IPersonRepository
     public async Task<Person?> GetPersonByIdAsync(int personId)
     {
         using var connection = _context.CreateConnection();
-        var result =  await connection.QuerySingleOrDefaultAsync<Person>("SELECT * FROM Persons WHERE Id = @Id", new { Id = personId });
+        var result = await connection.QuerySingleOrDefaultAsync<Person>("SELECT * FROM Persons WHERE Id = @Id", new { Id = personId });
         if (result == null)
             return null;
 
@@ -65,7 +59,7 @@ public class PersonRepository : IPersonRepository
             Id = result.Id,
             FirstName = result.FirstName,
             LastName = result.LastName,
-            Gender = Enum.Parse<Gender>(result.Gender.ToString()), 
+            Gender = Enum.Parse<Gender>(result.Gender.ToString()),
             PersonalNumber = result.PersonalNumber,
             DateOfBirth = result.DateOfBirth
         };
@@ -95,7 +89,7 @@ public class PersonRepository : IPersonRepository
 
     public async Task AddRelatedPersonAsync(RelatedPerson relation)
     {
-        string relationEnum =relation.RelationType.ToString();
+        string relationEnum = relation.RelationType.ToString();
         using var connection = _context.CreateConnection();
         await connection.ExecuteAsync(@"
             INSERT INTO RelatedPersons (PersonId, RelatedPersonId, RelationType)
