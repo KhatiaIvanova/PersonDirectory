@@ -14,6 +14,8 @@ namespace PersonDirectory.Infrastructure.Data
         private readonly string _connectionString;
         private readonly AsyncRetryPolicy _retryPolicy;
 
+
+
         public AppDbContext(IConfiguration configuration)
         {
             _configuration = configuration;
@@ -29,6 +31,7 @@ namespace PersonDirectory.Infrastructure.Data
                         Console.WriteLine($"Retry {retryCount} due to: {exception.Message}. Waiting {timespan}.");
                     });
         }
+
 
         public async Task<IDbConnection> CreateConnectionAsync()
         {

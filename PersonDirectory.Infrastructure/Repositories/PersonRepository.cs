@@ -6,6 +6,7 @@ using PersonDirectory.Infrastructure.Data;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace PersonDirectory.Infrastructure.Repositories;
@@ -28,15 +29,45 @@ public class PersonRepository : IPersonRepository
         ";
 
         using var connection = await _context.CreateConnectionAsync();
+        using var transaction = connection.BeginTransaction();
 
-        return await connection.QuerySingleAsync<int>(sql, new
+        try
         {
-            person.FirstName,
-            person.LastName,
-            Gender = person.Gender.ToString(),
-            person.PersonalNumber,
-            person.DateOfBirth
-        });
+            var personId = await connection.QuerySingleAsync<int>(sql, new
+            {
+                person.FirstName,
+                person.LastName,
+                Gender = person.Gender.ToString(),
+                person.PersonalNumber,
+                person.DateOfBirth
+            }, transaction);
+
+            if (person.PhoneNumbers?.Any() == true)
+            {
+                const string phoneSql = @"
+                    INSERT INTO PhoneNumbers (PersonId, Number, PhoneType)
+                    VALUES (@PersonId, @Number, @Type);
+                ";
+
+                foreach (var phone in person.PhoneNumbers)
+                {
+                    await connection.ExecuteAsync(phoneSql, new
+                    {
+                        PersonId = personId,
+                        phone.Number,
+                        Type = phone.Type.ToString()
+                    }, transaction);
+                }
+            }
+
+            transaction.Commit();
+            return personId;
+        }
+        catch
+        {
+            transaction.Rollback();
+            throw;
+        }
     }
 
     public async Task UpdatePersonAsync(Person person)
@@ -52,39 +83,85 @@ public class PersonRepository : IPersonRepository
         ";
 
         using var connection = await _context.CreateConnectionAsync();
+        using var transaction = connection.BeginTransaction();
 
-        await connection.ExecuteAsync(sql, new
+        try
         {
-            person.FirstName,
-            person.LastName,
-            Gender = person.Gender.ToString(),
-            person.PersonalNumber,
-            person.DateOfBirth,
-            person.Id
-        });
+            await connection.ExecuteAsync(sql, new
+            {
+                person.FirstName,
+                person.LastName,
+                Gender = person.Gender.ToString(),
+                person.PersonalNumber,
+                person.DateOfBirth,
+                person.Id
+            }, transaction);
+
+            const string deletePhones = "DELETE FROM PhoneNumbers WHERE PersonId = @PersonId";
+            await connection.ExecuteAsync(deletePhones, new { PersonId = person.Id }, transaction);
+
+            if (person.PhoneNumbers?.Any() == true)
+            {
+                const string insertPhones = @"
+                    INSERT INTO PhoneNumbers (PersonId, Number, PhoneType)
+                    VALUES (@PersonId, @Number, @Type);
+                ";
+
+                foreach (var phone in person.PhoneNumbers)
+                {
+                    await connection.ExecuteAsync(insertPhones, new
+                    {
+                        PersonId = person.Id,
+                        phone.Number,
+                        Type = phone.Type.ToString()
+                    }, transaction);
+                }
+            }
+
+            transaction.Commit();
+        }
+        catch
+        {
+            transaction.Rollback();
+            throw;
+        }
     }
 
     public async Task DeletePersonAsync(int personId)
     {
-        const string sql = "DELETE FROM Persons WHERE Id = @Id";
+        const string deletePhones = "DELETE FROM PhoneNumbers WHERE PersonId = @Id";
+        const string deletePerson = "DELETE FROM Persons WHERE Id = @Id";
 
         using var connection = await _context.CreateConnectionAsync();
+        using var transaction = connection.BeginTransaction();
 
-        await connection.ExecuteAsync(sql, new { Id = personId });
+        try
+        {
+            await connection.ExecuteAsync(deletePhones, new { Id = personId }, transaction);
+            await connection.ExecuteAsync(deletePerson, new { Id = personId }, transaction);
+            transaction.Commit();
+        }
+        catch
+        {
+            transaction.Rollback();
+            throw;
+        }
     }
 
     public async Task<Person?> GetPersonByIdAsync(int personId)
     {
-        const string sql = "SELECT * FROM Persons WHERE Id = @Id";
+        const string personSql = "SELECT * FROM Persons WHERE Id = @Id";
+        const string phonesSql = "SELECT * FROM PhoneNumbers WHERE PersonId = @PersonId";
 
         using var connection = await _context.CreateConnectionAsync();
 
-        var person = await connection.QuerySingleOrDefaultAsync<Person>(sql, new { Id = personId });
-
-        if (person == null)
-            return null;
+        var person = await connection.QuerySingleOrDefaultAsync<Person>(personSql, new { Id = personId });
+        if (person == null) return null;
 
         person.Gender = Enum.Parse<Gender>(person.Gender.ToString());
+
+        var phones = await connection.QueryAsync<PhoneNumber>(phonesSql, new { PersonId = personId });
+        person.PhoneNumbers = phones.ToList();
 
         return person;
     }
@@ -102,7 +179,7 @@ public class PersonRepository : IPersonRepository
 
         using var connection = await _context.CreateConnectionAsync();
 
-        return await connection.QueryAsync<Person>(sql, new
+        var people = await connection.QueryAsync<Person>(sql, new
         {
             Name = name,
             LastName = lastName,
@@ -110,6 +187,16 @@ public class PersonRepository : IPersonRepository
             Offset = (page - 1) * pageSize,
             PageSize = pageSize
         });
+
+        var list = people.ToList();
+        foreach (var person in list)
+        {
+            const string phonesSql = "SELECT * FROM PhoneNumbers WHERE PersonId = @PersonId";
+            var phones = await connection.QueryAsync<PhoneNumber>(phonesSql, new { PersonId = person.Id });
+            person.PhoneNumbers = phones.ToList();
+        }
+
+        return list;
     }
 
     public async Task AddRelatedPersonAsync(RelatedPerson relation)

@@ -33,8 +33,14 @@ public class PersonsController : ControllerBase
             LastName = dto.LastName,
             Gender = dto.Gender,
             PersonalNumber = dto.PersonalNumber,
-            DateOfBirth = dto.DateOfBirth
-        };
+            DateOfBirth = dto.DateOfBirth,
+            PhoneNumbers = dto.PhoneNumbers.Select(p => new PhoneNumber
+            {
+                Number = p.Number,
+                Type = p.Type
+            }).ToList()
+
+    };
 
         var id = await _personService.AddPersonAsync(person);
         return CreatedAtAction(nameof(GetPerson), new { id }, null);
@@ -51,6 +57,11 @@ public class PersonsController : ControllerBase
         existing.Gender = dto.Gender;
         existing.PersonalNumber = dto.PersonalNumber;
         existing.DateOfBirth = dto.DateOfBirth;
+        existing.PhoneNumbers = dto.PhoneNumbers.Select(p => new PhoneNumber
+        {
+            Number = p.Number,
+            Type = p.Type
+        }).ToList();
 
         await _personService.UpdatePersonAsync(existing);
         return NoContent();
@@ -79,7 +90,12 @@ public class PersonsController : ControllerBase
             LastName = person.LastName,
             Gender = person.Gender,
             PersonalNumber = person.PersonalNumber,
-            DateOfBirth = person.DateOfBirth
+            DateOfBirth = person.DateOfBirth,
+            PhoneNumbers = person.PhoneNumbers.Select(p => new PhoneNumberDto
+            {
+                Number = p.Number,
+                Type = p.Type
+            }).ToList()
         };
         return Ok(dto);
     }
@@ -95,7 +111,12 @@ public class PersonsController : ControllerBase
             LastName = p.LastName,
             Gender = p.Gender,
             PersonalNumber = p.PersonalNumber,
-            DateOfBirth = p.DateOfBirth
+            DateOfBirth = p.DateOfBirth,
+            PhoneNumbers = p.PhoneNumbers.Select(phone => new PhoneNumberDto
+            {
+                Number = phone.Number,
+                Type = phone.Type
+            }).ToList()
         }));
     }
 
