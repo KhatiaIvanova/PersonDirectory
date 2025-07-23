@@ -27,7 +27,7 @@ CREATE TABLE PhoneNumbers (
     Id INT IDENTITY(1,1) PRIMARY KEY,
     PersonId INT NOT NULL,
     Number NVARCHAR(50) NOT NULL,
-    PhoneType NVARCHAR(20) NOT NULL CHECK (PhoneNumbers.Type IN (N'მობილური',N'ოფისი',N'სახლი')),
+    PhoneType NVARCHAR(20) NOT NULL CHECK (PhoneNumbers.PhoneType IN (N'მობილური',N'ოფისი',N'სახლი')),
     CONSTRAINT FK_PhoneNumbers_Persons FOREIGN KEY (PersonId)
         REFERENCES Persons(Id) ON DELETE CASCADE
 );
