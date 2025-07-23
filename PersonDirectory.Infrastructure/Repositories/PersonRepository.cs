@@ -29,7 +29,6 @@ public class PersonRepository : IPersonRepository
 
         using var connection = await _context.CreateConnectionAsync();
 
-        // პარამეტრებში პირდაპირ enum-ს ასობით ჩავასვათ, DB-ში უნდა იყოს nvarchar/varchar ტიპი
         return await connection.QuerySingleAsync<int>(sql, new
         {
             person.FirstName,
@@ -85,7 +84,6 @@ public class PersonRepository : IPersonRepository
         if (person == null)
             return null;
 
-        // თუ გინდა Gender string-იდან enum-ში გადაყვანა (მაგ: Dapper-ით პირდაპირ არ გადადის)
         person.Gender = Enum.Parse<Gender>(person.Gender.ToString());
 
         return person;
